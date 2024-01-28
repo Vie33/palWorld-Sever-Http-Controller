@@ -3,6 +3,11 @@ A GUI system to remote control palworld game sever
 该项目是基于rcon协议远程操控palworld游戏服务器的插件，服务端通过HTTP api接收客户端GUI面板发送的指令
 从而完成重启服务器，查看服务器信息，查看服务器内存占用等功能...
 
+# 快速部署
+服务端：bulid代码，填写配置文件，在服务器任意路径打开bulid后的可执行程序  
+客户端：bulid代码，填写配置文件，在任意终端打开bulid后的操控面板  
+全部部署完毕即可实现远程操控服务器
+
 # 服务端配置文件 rconControllerConfig.ini
 ```ini
 [Sever Http Controller Config]
