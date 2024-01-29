@@ -1,5 +1,5 @@
-# 帕鲁世界服务器GUI面板控制器
-A GUI system to remote control palworld game sever
+# 幻兽帕鲁服务器GUI面板控制器
+一个实现远程控制服务端行为的项目  
 该项目是基于rcon协议远程操控palworld游戏服务器的插件，服务端通过HTTP api接收客户端GUI面板发送的指令
 从而完成重启服务器，查看服务器信息，查看服务器内存占用等功能...
 
