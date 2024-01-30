@@ -2,6 +2,7 @@ from flask import Flask, jsonify,request
 import management
 import logging
 import configparser
+from datetime import datetime,timedelta
 
 # 配置日志记录
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -61,6 +62,14 @@ def start_sever():
     logging.info('start sever...')
     response = management.startSever()
     return response
+
+# 处理/backupSaved请求
+@app.route('/backupSaved', methods=['GET'])
+def backup_saved():
+    # 处理开始备份服务器存档的请求
+    logging.info('start back up saved...')
+    management.backup(timedelta(seconds=1),'1','即将重启服务器备份存档!',False)
+    return 'start back up saved...'
 
 if __name__ == '__main__':
     logging.info('system listening at 8882...')
