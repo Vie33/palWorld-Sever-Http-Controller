@@ -10,8 +10,30 @@ import shutil
 from datetime import datetime,timedelta
 
 # 配置日志记录
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger('my_logger')
+logging.getLogger().propagate = False
+def initLog():
+    # 创建日志记录器
+    logger.setLevel(logging.INFO)
+    # 创建控制台处理程序
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    # 创建文件处理程序
+    file_handler = logging.FileHandler('app.log')
+    file_handler.setLevel(logging.INFO)
 
+    # 创建日志格式器
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+    # 将格式器添加到处理程序
+    console_handler.setFormatter(formatter)
+    file_handler.setFormatter(formatter)
+
+    # 将处理程序添加到记录器
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
+
+initLog()
 #获取服务器控制器插件的配置参数
 config = configparser.ConfigParser()
 config.read('rconControllerConfig.ini')
@@ -38,24 +60,24 @@ lastest_backup_dateTime = None
 
 
 def callRcon(command):
-    logging.info('call rcon command:'+command)
+    logger.info('call rcon command:'+command)
     if check_process_exists():      
         with Client('localhost', int(rconPort), passwd=password) as client:
             response = client.run(command)
         return response
     else:
-        logging.error('sever not start...')
+        logger.error('sever not start...')
         return 'Sever not start...'
 
 def reStartSever(waitTime,msg,isRestart):
-    logging.info('reStartSever() working...')
+    logger.info('reStartSever() working...')
     if is_backup_thread_running:
         response = 'Error: system is backing up saved'
-        logging.error('Error: system is backing up saved')
+        logger.error('Error: system is backing up saved')
         return response
     if isRestart=='1' and is_reStart_thread_running:
         response = 'Error: Sever is Restarting.Please wait until sever restart finish'
-        logging.error('restart thread is running...')
+        logger.error('restart thread is running...')
         return response
     response = callRcon('Shutdown '+waitTime+' '+ msg)
     if isRestart=='1' and not response=='Sever not start...':
@@ -66,7 +88,7 @@ def reStartSever(waitTime,msg,isRestart):
             while True:
                 time.sleep(1)
                 if not check_process_exists():
-                    logging.info("path:" + path)
+                    logger.info("path:" + path)
                     subprocess.Popen(path)
                     break
             is_reStart_thread_running = False
@@ -77,48 +99,48 @@ def reStartSever(waitTime,msg,isRestart):
     
 
 def startSever():
-    logging.info('startSever() working...')
+    logger.info('startSever() working...')
     if is_backup_thread_running:
         response = 'Error: system is backing up saved'
-        logging.error('Error: system is backing up saved')
+        logger.error('Error: system is backing up saved')
         return response
     if check_process_exists():
-        logging.error('sever already start...')
+        logger.error('sever already start...')
         response = 'Error:Game sever already start....'
     else:
-        logging.info("path:"+path)
+        logger.info("path:"+path)
         subprocess.Popen(path)
         response = 'Game sever start...'
     return response
 
 def showPlayers():
-    logging.info('showPlayers() working...')
+    logger.info('showPlayers() working...')
     response = callRcon('ShowPlayers')
-    logging.info('show players success...')
+    logger.info('show players success...')
     return response
 
 def saveGame():
-    logging.info('saveGame() working...')
+    logger.info('saveGame() working...')
     if is_backup_thread_running:
         response = 'Error: system is backing up saved'
-        logging.error('Error: system is backing up saved')
+        logger.error('Error: system is backing up saved')
         return response
     response = callRcon('Save')
-    logging.info('save game success...')
+    logger.info('save game success...')
     return response
 
 def showSeverInfo():
-    logging.info('showSeverInfo() working...')
+    logger.info('showSeverInfo() working...')
     if is_backup_thread_running:
         response = 'Error: system is backing up saved'
-        logging.error('Error: system is backing up saved')
+        logger.error('Error: system is backing up saved')
         return response
     response = callRcon('Info')
-    logging.info('show sever info success...')
+    logger.info('show sever info success...')
     return response
 
 def showSeverMemory():
-    logging.info('showSeverMemory() working...')
+    logger.info('showSeverMemory() working...')
     # 获取内存占用情况
     memory = psutil.virtual_memory()
     # To Json
@@ -131,15 +153,17 @@ def showSeverMemory():
     return memory_dict
 
 def backupSaved():
-    logging.info('back up saved job working...')
+    logger.info('back up saved job working...')
     while True:
-        logging.info('back up saved job checking...')
-        if len(showPlayers()) == 2:
+        logger.info('back up saved job checking...')
+        if len(showPlayers().split('\n')) == 2:
             #服务器没人
+            logger.info('no players...')
             deltTime = timedelta(hours=12)
             backup(deltTime,'1','',True)
         else:
             #服务器有人
+            logger.info('exist players...')
             deltTime = timedelta(hours=1)
             backup(deltTime,'60','即将重启服务器备份存档!',True)
         time.sleep(30*60)
@@ -150,11 +174,11 @@ def backup(deltTime,delay,msg,needRebot):
     
     def async_backup():
         #执行备份逻辑
-        logging.info('start back up saved async...')
+        logger.info('start back up saved async...')
         global is_backup_thread_running
         global lastest_backup_dateTime
         if check_process_exists():
-            logging.info('the game sever is running,before copy saved folder, now shutdown sever...')
+            logger.info('the game sever is running,before copy saved folder, now shutdown sever...')
             saveGame()
             reStartSever(delay,msg,'0')
         is_backup_thread_running = True
@@ -165,25 +189,25 @@ def backup(deltTime,delay,msg,needRebot):
                 shutil.copytree(os.path.join(os.path.dirname(path),"Pal\\Saved"),os.path.join(backupFolder,datetime.now().strftime('%Y-%m-%d-%H-%M-%S')))
                 lastest_backup_dateTime = datetime.now()
                 break
-            logging.info('waiting game sever exit....')
+            logger.info('waiting game sever exit....')
         is_backup_thread_running = False
         if needRebot:
-            logging.info('need rebot, now restart sever...')
+            logger.info('need rebot, now restart sever...')
             startSever()
         else:
-            logging.info('not need rebot...')
-        logging.info('finish back up saved...')
+            logger.info('not need rebot...')
+        logger.info('finish back up saved...')
 
     global lastest_backup_dateTime
-    logging.info('start comparing lastest_backup_dateTime:'+str(lastest_backup_dateTime)+' and deltTime:'+str(deltTime))
+    logger.info('start comparing lastest_backup_dateTime:'+str(lastest_backup_dateTime)+' and deltTime:'+str(deltTime))
     if datetime.now() > lastest_backup_dateTime + deltTime:
-        logging.info('The current time exceeds the set time,start back up...')
+        logger.info('The current time exceeds the set time,start back up...')
         thread = threading.Thread(target=async_backup)
         thread.start()
     else:
-        logging.info('The current time not exceeds the set time,continue job...')
+        logger.info('The current time not exceeds the set time,continue job...')
 def checkLastestBackup():
-    logging.info('start getting lastest saved dateTime...')
+    logger.info('start getting lastest saved dateTime...')
     global lastest_backup_dateTime
     for folder in backup_folders:
         try:
@@ -197,7 +221,7 @@ def checkLastestBackup():
     if not lastest_backup_dateTime:
         lastest_backup_dateTime = datetime.now()
         
-    logging.info('the lastest back up dateTime is'+ lastest_backup_dateTime.strftime('%Y-%m-%d-%H-%M-%S'))
+    logger.info('the lastest back up dateTime is'+ lastest_backup_dateTime.strftime('%Y-%m-%d-%H-%M-%S'))
 
 checkLastestBackup()
 thread = threading.Thread(target=backupSaved)
